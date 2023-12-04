@@ -11,9 +11,9 @@ import {
 
 export default async function Page() {
   return (
-    <main>
+    <main className="round-md bg-neutral-900 p-6">
       <h1
-        className={`${poppins.className} mb-4 text-center text-xl md:text-2xl`}
+        className={`${poppins.className} mb-4 text-center text-xl text-white md:text-3xl`}
       >
         Dashboard
       </h1>
