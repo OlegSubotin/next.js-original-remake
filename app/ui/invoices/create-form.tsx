@@ -18,11 +18,14 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
 
   return (
     <form action={dispatch}>
-      <div className="rounded-md bg-gray-50 p-4 md:p-6">
+      <div className="rounded-md bg-neutral-700 p-4 md:p-6">
         {/* Customer Name */}
         <div className="mb-4">
-          <label htmlFor="customer" className="mb-2 block text-sm font-medium">
-            Choose customer
+          <label
+            htmlFor="customer"
+            className="mb-2 block text-sm font-medium text-white"
+          >
+            Seller
           </label>
           <div className="relative">
             <select
@@ -33,7 +36,7 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
               aria-describedby="customer-error"
             >
               <option value="" disabled>
-                Select a customer
+                Choose a seller
               </option>
               {customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
@@ -46,7 +49,7 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
           <div id="customer-error" aria-live="polite" aria-atomic="true">
             {state.errors?.customerId &&
               state.errors.customerId.map((error: string) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
+                <p className="mt-3 text-sm text-lime-500" key={error}>
                   {error}
                 </p>
               ))}
@@ -55,8 +58,11 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
 
         {/* Invoice Amount */}
         <div className="mb-4">
-          <label htmlFor="amount" className="mb-2 block text-sm font-medium">
-            Choose an amount
+          <label
+            htmlFor="amount"
+            className="mb-2 block text-sm font-medium text-white"
+          >
+            Choose a sum
           </label>
           <div className="relative mt-2 rounded-md">
             <div className="relative">
@@ -74,7 +80,7 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
             <div id="amount-error" aria-live="polite" aria-atomic="true">
               {state.errors?.amount &&
                 state.errors.amount.map((error: string) => (
-                  <p className="mt-2 text-sm text-red-500" key={error}>
+                  <p className="mt-3 text-sm text-lime-500" key={error}>
                     {error}
                   </p>
                 ))}
@@ -84,7 +90,7 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
 
         {/* Invoice Status */}
         <fieldset>
-          <legend className="mb-2 block text-sm font-medium">
+          <legend className="mb-2 block text-sm font-medium text-white">
             Set the invoice status
           </legend>
           <div className="rounded-md border border-gray-200 bg-white px-[14px] py-3">
@@ -100,9 +106,9 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
                 />
                 <label
                   htmlFor="pending"
-                  className="ml-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600"
+                  className="ml-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white"
                 >
-                  Pending <ClockIcon className="h-4 w-4" />
+                  Awaiting <ClockIcon className="h-4 w-4" />
                 </label>
               </div>
               <div className="flex items-center">
@@ -116,20 +122,20 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
                 />
                 <label
                   htmlFor="paid"
-                  className="ml-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-green-500 px-3 py-1.5 text-xs font-medium text-white"
+                  className=" ml-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-lime-400 px-3 py-1.5 text-xs font-medium text-sky-700"
                 >
-                  Paid <CheckIcon className="h-4 w-4" />
+                  Fulfilled <CheckIcon className="h-4 w-4" />
                 </label>
               </div>
             </div>
-            <div id="status-error" aria-live="polite" aria-atomic="true">
-              {state.errors?.status &&
-                state.errors.status.map((error: string) => (
-                  <p className="mt-2 text-sm text-red-500" key={error}>
-                    {error}
-                  </p>
-                ))}
-            </div>
+          </div>
+          <div id="status-error" aria-live="polite" aria-atomic="true">
+            {state.errors?.status &&
+              state.errors.status.map((error: string) => (
+                <p className="mt-3 text-sm text-lime-500" key={error}>
+                  {error}
+                </p>
+              ))}
           </div>
         </fieldset>
       </div>
