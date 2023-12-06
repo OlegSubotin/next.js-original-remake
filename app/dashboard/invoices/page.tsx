@@ -26,12 +26,16 @@ export default async function Page({
   const totalPages = await fetchInvoicesPages(query);
 
   return (
-    <div className="w-full">
-      <div className="flex w-full items-center justify-between">
-        <h1 className={`${poppins.className} text-2xl`}>Invoices</h1>
+    <div className="w-full rounded-xl bg-neutral-900 p-6">
+      <div className="flex w-full items-center justify-center">
+        <h1
+          className={`${poppins.className} text-center text-xl text-white md:text-3xl`}
+        >
+          Invoices
+        </h1>
       </div>
       <div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
-        <Search placeholder="Search invoices..." />
+        <Search placeholder="Find invoice" />
         <CreateInvoice />
       </div>
       <Suspense key={query + currentPage} fallback={<InvoicesTableSkeleton />}>
