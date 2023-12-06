@@ -11,7 +11,7 @@ import {
 
 export default async function Page() {
   return (
-    <main className="round-md bg-neutral-900 p-6">
+    <main className="rounded-xl bg-neutral-900 p-6">
       <h1
         className={`${poppins.className} mb-4 text-center text-xl text-white md:text-3xl`}
       >
