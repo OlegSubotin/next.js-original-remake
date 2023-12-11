@@ -1,46 +1,48 @@
 import { unstable_noStore as noStore } from 'next/cache';
 import { sql } from '@vercel/postgres';
 import {
-  CustomerField,
-  CustomersTableType,
+  SellerField,
+  SellersTableType,
   InvoiceForm,
   InvoicesTable,
   LatestInvoiceRaw,
   User,
-  Revenue,
+  Income,
 } from './definitions';
 import { formatCurrency } from './utils';
 
-export async function fetchRevenue() {
-  // Add noStore() here prevent the response from being cached.
-  // This is equivalent to in fetch(..., {cache: 'no-store'}).
+/**
+ * Fetches income data from the database.
+ * @returns {Promise<Income[]>} A promise that resolves to an array of income data.
+ */
+export async function fetchIncome() {
+  // Add noStore() here to prevent the response from being cached.
+  // This is equivalent to using { cache: 'no-store' } in the fetch options.
   noStore();
 
   try {
-    // Artificially delay a response for demo purposes.
-    // Don't do this in production :)
-
-    // console.log('Fetching revenue data...');
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    const data = await sql<Revenue>`SELECT * FROM revenue`;
-
-    // console.log('Data fetch completed after 3 seconds.');
+    const data = await sql<Income>`SELECT * FROM income`;
 
     return data.rows;
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch revenue data.');
+    throw new Error('Failed to fetch income data.');
   }
 }
 
+/**
+ * Fetches the latest invoices from the database.
+ * @returns {Promise<LatestInvoiceRaw[]>} A promise that resolves to an array of the latest invoices.
+ */
 export async function fetchLatestInvoices() {
   noStore();
   try {
     const data = await sql<LatestInvoiceRaw>`
-      SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
+      SELECT invoices.amount, sellers.name, sellers.image_url, sellers.email, invoices.id
       FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
+      JOIN sellers ON invoices.seller_id = sellers.id
       ORDER BY invoices.date DESC
       LIMIT 5`;
 
@@ -55,17 +57,21 @@ export async function fetchLatestInvoices() {
   }
 }
 
+/**
+ * Fetches card data summarizing invoices and sellers from the database.
+ * @returns {Promise<object>} A promise that resolves to an object containing card data.
+ */
 export async function fetchCardData() {
   noStore();
   try {
-    // You can probably combine these into a single SQL query
+    // You can probably combine these into a single SQL query.
     // However, we are intentionally splitting them to demonstrate
     // how to initialize multiple queries in parallel with JS.
     const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
-    const sellerCountPromise = sql`SELECT COUNT(*) FROM customers`;
+    const sellerCountPromise = sql`SELECT COUNT(*) FROM sellers`;
     const invoiceStatusPromise = sql`SELECT
-         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
-         SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
+         SUM(CASE WHEN status = 'fulfilled' THEN amount ELSE 0 END) AS "fulfilled",
+         SUM(CASE WHEN status = 'awaiting' THEN amount ELSE 0 END) AS "awaiting"
          FROM invoices`;
 
     const data = await Promise.all([
@@ -76,14 +82,18 @@ export async function fetchCardData() {
 
     const numberOfInvoices = Number(data[0].rows[0].count ?? '0');
     const numberOfSellers = Number(data[1].rows[0].count ?? '0');
-    const totalPaidInvoices = formatCurrency(data[2].rows[0].paid ?? '0');
-    const totalPendingInvoices = formatCurrency(data[2].rows[0].pending ?? '0');
+    const totalFulfilledInvoices = formatCurrency(
+      data[2].rows[0].fulfilled ?? '0',
+    );
+    const totalAwaitingInvoices = formatCurrency(
+      data[2].rows[0].awaiting ?? '0',
+    );
 
     return {
       numberOfSellers,
       numberOfInvoices,
-      totalPaidInvoices,
-      totalPendingInvoices,
+      totalFulfilledInvoices,
+      totalAwaitingInvoices,
     };
   } catch (error) {
     console.error('Database Error:', error);
@@ -91,6 +101,12 @@ export async function fetchCardData() {
   }
 }
 
+/**
+ * Fetches a paginated list of filtered invoices based on a search query.
+ * @param {string} query - The search query.
+ * @param {number} currentPage - The current page number for pagination.
+ * @returns {Promise<InvoicesTable[]>} A promise that resolves to an array of filtered invoices.
+ */
 const ITEMS_PER_PAGE = 6;
 export async function fetchFilteredInvoices(
   query: string,
@@ -106,14 +122,14 @@ export async function fetchFilteredInvoices(
         invoices.amount,
         invoices.date,
         invoices.status,
-        customers.name,
-        customers.email,
-        customers.image_url
+        sellers.name,
+        sellers.email,
+        sellers.image_url
       FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
+      JOIN sellers ON invoices.seller_id = sellers.id
       WHERE
-        customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`} OR
+        sellers.name ILIKE ${`%${query}%`} OR
+        sellers.email ILIKE ${`%${query}%`} OR
         invoices.amount::text ILIKE ${`%${query}%`} OR
         invoices.date::text ILIKE ${`%${query}%`} OR
         invoices.status ILIKE ${`%${query}%`}
@@ -128,15 +144,20 @@ export async function fetchFilteredInvoices(
   }
 }
 
+/**
+ * Fetches the total number of pages for paginating filtered invoices.
+ * @param {string} query - The search query.
+ * @returns {Promise<number>} A promise that resolves to the total number of pages.
+ */
 export async function fetchInvoicesPages(query: string) {
   noStore();
   try {
     const count = await sql`SELECT COUNT(*)
     FROM invoices
-    JOIN customers ON invoices.customer_id = customers.id
+    JOIN sellers ON invoices.seller_id = sellers.id
     WHERE
-      customers.name ILIKE ${`%${query}%`} OR
-      customers.email ILIKE ${`%${query}%`} OR
+      sellers.name ILIKE ${`%${query}%`} OR
+      sellers.email ILIKE ${`%${query}%`} OR
       invoices.amount::text ILIKE ${`%${query}%`} OR
       invoices.date::text ILIKE ${`%${query}%`} OR
       invoices.status ILIKE ${`%${query}%`}
@@ -150,13 +171,18 @@ export async function fetchInvoicesPages(query: string) {
   }
 }
 
+/**
+ * Fetches a specific invoice by its ID from the database.
+ * @param {string} id - The ID of the invoice.
+ * @returns {Promise<InvoiceForm>} A promise that resolves to the details of the specified invoice.
+ */
 export async function fetchInvoiceById(id: string) {
   noStore();
   try {
     const data = await sql<InvoiceForm>`
       SELECT
         invoices.id,
-        invoices.customer_id,
+        invoices.seller_id,
         invoices.amount,
         invoices.status
       FROM invoices
@@ -176,59 +202,73 @@ export async function fetchInvoiceById(id: string) {
   }
 }
 
-export async function fetchCustomers() {
+/**
+ * Fetches a list of sellers from the database.
+ * @returns {Promise<SellerField[]>} A promise that resolves to an array of seller data.
+ */
+export async function fetchSellers() {
   noStore();
   try {
-    const data = await sql<CustomerField>`
+    const data = await sql<SellerField>`
       SELECT
         id,
         name
-      FROM customers
+      FROM sellers
       ORDER BY name ASC
     `;
 
-    const customers = data.rows;
-    return customers;
+    const sellers = data.rows;
+    return sellers;
   } catch (err) {
     console.error('Database Error:', err);
-    throw new Error('Failed to fetch all customers.');
+    throw new Error('Failed to fetch all sellers.');
   }
 }
 
-export async function fetchFilteredCustomers(query: string) {
+/**
+ * Fetches a paginated and filtered list of sellers based on a search query.
+ * @param {string} query - The search query.
+ * @returns {Promise<FormattedSellersTable[]>} A promise that resolves to an array of formatted seller data.
+ */
+export async function fetchFilteredSellers(query: string) {
   noStore();
   try {
-    const data = await sql<CustomersTableType>`
-		SELECT
-		  customers.id,
-		  customers.name,
-		  customers.email,
-		  customers.image_url,
-		  COUNT(invoices.id) AS total_invoices,
-		  SUM(CASE WHEN invoices.status = 'pending' THEN invoices.amount ELSE 0 END) AS total_pending,
-		  SUM(CASE WHEN invoices.status = 'paid' THEN invoices.amount ELSE 0 END) AS total_paid
-		FROM customers
-		LEFT JOIN invoices ON customers.id = invoices.customer_id
-		WHERE
-		  customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`}
-		GROUP BY customers.id, customers.name, customers.email, customers.image_url
-		ORDER BY customers.name ASC
-	  `;
+    const data = await sql<SellersTableType>`
+      SELECT
+        sellers.id,
+        sellers.name,
+        sellers.email,
+        sellers.image_url,
+        COUNT(invoices.id) AS total_invoices,
+        SUM(CASE WHEN invoices.status = 'awaiting' THEN invoices.amount ELSE 0 END) AS total_awaiting,
+        SUM(CASE WHEN invoices.status = 'fulfilled' THEN invoices.amount ELSE 0 END) AS total_fulfilled
+      FROM sellers
+      LEFT JOIN invoices ON sellers.id = invoices.seller_id
+      WHERE
+        sellers.name ILIKE ${`%${query}%`} OR
+        sellers.email ILIKE ${`%${query}%`}
+      GROUP BY sellers.id, sellers.name, sellers.email, sellers.image_url
+      ORDER BY sellers.name ASC
+    `;
 
-    const customers = data.rows.map((customer) => ({
+    const sellers = data.rows.map((customer) => ({
       ...customer,
-      total_pending: formatCurrency(customer.total_pending),
-      total_paid: formatCurrency(customer.total_paid),
+      total_awaiting: formatCurrency(customer.total_awaiting),
+      total_fulfilled: formatCurrency(customer.total_fulfilled),
     }));
 
-    return customers;
+    return sellers;
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch customer table.');
   }
 }
 
+/**
+ * Fetches a user from the database based on their email.
+ * @param {string} email - The email address of the user.
+ * @returns {Promise<User>} A promise that resolves to the user details.
+ */
 export async function getUser(email: string) {
   noStore();
   try {
