@@ -23,7 +23,7 @@ export default async function Page({
   const query = searchParams?.query || '';
   const currentPage = Number(searchParams?.page) || 1;
 
-  const totalPages = await fetchInvoicesPages(query);
+  // const totalPages = await fetchInvoicesPages(query);
 
   return (
     <div className="w-full rounded-xl bg-neutral-900 p-6">
@@ -34,7 +34,7 @@ export default async function Page({
           Invoices
         </h1>
       </div>
-      <div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
+      {/* <div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
         <Search placeholder="Find invoice" />
         <CreateInvoice />
       </div>
@@ -43,7 +43,7 @@ export default async function Page({
       </Suspense>
       <div className="mt-5 flex w-full justify-center">
         <Pagination totalPages={totalPages} />
-      </div>
+      </div> */}
     </div>
   );
 }
